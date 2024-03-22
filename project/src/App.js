@@ -3,7 +3,7 @@ import { useState} from "react";
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import {getAuth,GoogleAuthProvider,signInWithRedirect} from "firebase/auth";
-import { getFirestore,collection, addDoc,getDocs,doc,getDoc} from "firebase/firestore";
+import { getFirestore,collection, addDoc,getDocs,doc,getDoc,setDoc,updateDoc} from "firebase/firestore";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -30,12 +30,17 @@ function App() {
     const [pubMessages,setPubMessages]=useState([]);
     const [priMessage,setPriMessage]=useState([]);
     const [inbox,setInbox]= useState([]);
+    const [recipient,setRecipient]= useState('');
     const [user] =useAuthState(auth);
     function handleMessageChange(e){
         setMessage(e.target.value);
     }
     function handleUserNameChange(e){
         setUserName(e.target.value);
+    }
+    function handleRecipientChange(e){
+        setRecipient(e.target.value);
+
     }
     async function updatePubs() {
         console.log("getting messages")
@@ -66,6 +71,26 @@ function App() {
                 i+=1;
             })
             setInbox(dataArray);
+        }
+    }
+    async function sendPrivateMessage(){
+        const docRef =doc(db, 'inboxes',recipient);
+        const docSnapshot = await getDoc(docRef);
+        if(docSnapshot.exists()){
+            let messages = docSnapshot.data().message;
+            let senderID = docSnapshot.data().senderId;
+            messages.push(priMessage);
+            senderID.push(userName)
+            console.log(messages[1])
+            await setDoc(doc(db,'inboxes',recipient),{
+                message:messages.filter((elm)=>!elm.isArray),
+                senderId:senderID.filter((elm)=>!elm.isArray)
+            })
+        }else{
+            await setDoc(doc(db,'inboxes',recipient),{
+                message:[priMessage],
+                senderId:[userName]
+            })
         }
     }
     async function sendPubMessage(){
@@ -99,20 +124,19 @@ return(<>
 
           <div className="container">
               <h1 id="MsgTitle">Tweeter</h1>
-              <button id="directButton">Direct Chat</button>
-              <button id="groupButton">Group Chat</button>
-              <button id="publicButton">Public Chat</button>
-              <select id="chatDropdown">
-                  <option value="">Select Chat</option>
-              </select>
+              <div>Your username<input value={userName} onChange={handleUserNameChange}/></div>
+
+              <h2>Send message</h2>
+
+              <div>recipient<input value={recipient} onChange={handleRecipientChange}/></div>
+              <div>message<input value={message} onChange={handleMessageChange}/></div>
+              <button onClick={sendPrivateMessage}>Send Message</button>
               <h2>Private inbox</h2>
               <button onClick={checkInbox}>check inbox</button>
 
-              <div>Username<input value={userName} onChange={handleUserNameChange}/></div>
-              {inbox&& inbox.map(doc=> messageCardFactory(doc))}
+              {inbox && inbox.map(doc => messageCardFactory(doc))}
               <div id="chatMessages"></div>
               <h2>Public messages</h2>
-              <div>Username<input value={userName} onChange={handleUserNameChange}/></div>
               <div>message<input value={message} onChange={handleMessageChange}/></div>
               <button onClick={sendPubMessage}>Send Message</button>
               <button onClick={updatePubs}>Update public messages</button>
