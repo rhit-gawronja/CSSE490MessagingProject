@@ -108,8 +108,10 @@ function App() {
     }
     function messageCardFactory(data){
 return(<>
-    <div>{data.userName}</div>
-    <div>{data.message}</div>
+    <div style={{borderStyle:"solid" }}>
+    <h3>User: {data.userName}</h3>
+    <div style={{background:"black", color:"white"}}>Said: {data.message}</div>
+    </div>
     </>)
     }
     const signInWithGoogle = () => {
