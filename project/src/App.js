@@ -2,10 +2,11 @@ import './App.css';
 import { useState} from "react";
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
+import {getAuth,GoogleAuthProvider,signInWithRedirect} from "firebase/auth";
 import { getFirestore,collection, addDoc,getDocs} from "firebase/firestore";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
-
+import { useAuthState } from 'react-firebase-hooks/auth';
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
@@ -22,10 +23,12 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth();
 function App() {
     const [message,setMessage]=useState('');
     const [userName,setUserName]=useState('');
     const [pubMessages,setPubMessages]=useState([]);
+    const [user] =useAuthState(auth);
     function handleMessageChange(e){
         setMessage(e.target.value);
     }
@@ -35,7 +38,7 @@ function App() {
     async function updatePubs() {
         console.log("getting messages")
         let dataArray=[]
-        const querySnapshot = await getDocs(collection(db, "pubmessage"));
+        const querySnapshot = await getDocs(collection(db, 'pubmessage'));
         querySnapshot.forEach((doc) => {
             console.log(`${doc.id} => ${JSON.stringify(doc.data())}`);
             dataArray.push(doc.data());
@@ -61,6 +64,10 @@ return(<>
     <div>{data.message}</div>
     </>)
     }
+    const signInWithGoogle = () => {
+        const provider = new GoogleAuthProvider();
+        signInWithRedirect(provider);
+    }
   return (
       <div className="App">
         <button id="loginBar" className="navbar navbar-dark ">
@@ -75,13 +82,17 @@ return(<>
               <select id="chatDropdown">
                   <option value="">Select Chat</option>
               </select>
+              <h2>Private inbox</h2>
+              <button>check inbox</button>
 
               <div id="chatMessages"></div>
+              <h2>Public messages</h2>
               <div>Username<input value={userName} onChange={handleUserNameChange}/></div>
               <div>message<input value={message} onChange={handleMessageChange}/></div>
               <button onClick={sendPubMessage}>Send Message</button>
               <button onClick={updatePubs}>Update public messages</button>
-              {pubMessages && pubMessages.map(msg=> messageCardFactory(msg))}
+              {pubMessages && pubMessages.map(msg => messageCardFactory(msg))}
+              {/*<button className="sign-in" onClick={signInWithGoogle}>Sign in with Google</button>*/}
           </div>
       </div>
   );
