@@ -3,7 +3,7 @@ import { useState} from "react";
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import {getAuth,GoogleAuthProvider,signInWithRedirect} from "firebase/auth";
-import { getFirestore,collection, addDoc,getDocs} from "firebase/firestore";
+import { getFirestore,collection, addDoc,getDocs,doc,getDoc} from "firebase/firestore";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -28,6 +28,8 @@ function App() {
     const [message,setMessage]=useState('');
     const [userName,setUserName]=useState('');
     const [pubMessages,setPubMessages]=useState([]);
+    const [priMessage,setPriMessage]=useState([]);
+    const [inbox,setInbox]= useState([]);
     const [user] =useAuthState(auth);
     function handleMessageChange(e){
         setMessage(e.target.value);
@@ -44,6 +46,27 @@ function App() {
             dataArray.push(doc.data());
         });
         setPubMessages(dataArray);
+    }
+    async function checkInbox(){
+        let dataArray=[]
+        console.log('pressed');
+        const docRef = doc(db ,'inboxes',userName);
+        const docSnapshot = await getDoc(docRef);
+        if(docSnapshot.exists()){
+            console.log('we exsist');
+            let messages = docSnapshot.data().message;
+            let senderId = docSnapshot.data().senderId;
+            let i=0;
+            messages.forEach((msg)=>{
+                console.log(senderId[i]);
+                dataArray.push({
+                    message:msg,
+                    userName:senderId[i]
+                })
+                i+=1;
+            })
+            setInbox(dataArray);
+        }
     }
     async function sendPubMessage(){
         try {
@@ -83,8 +106,10 @@ return(<>
                   <option value="">Select Chat</option>
               </select>
               <h2>Private inbox</h2>
-              <button>check inbox</button>
+              <button onClick={checkInbox}>check inbox</button>
 
+              <div>Username<input value={userName} onChange={handleUserNameChange}/></div>
+              {inbox&& inbox.map(doc=> messageCardFactory(doc))}
               <div id="chatMessages"></div>
               <h2>Public messages</h2>
               <div>Username<input value={userName} onChange={handleUserNameChange}/></div>
